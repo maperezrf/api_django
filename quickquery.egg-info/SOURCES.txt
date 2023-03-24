@@ -1,0 +1,12 @@
+README.md
+setup.py
+quickquery/__init__.py
+quickquery/asgi.py
+quickquery/settings.py
+quickquery/urls.py
+quickquery/wsgi.py
+quickquery.egg-info/PKG-INFO
+quickquery.egg-info/SOURCES.txt
+quickquery.egg-info/dependency_links.txt
+quickquery.egg-info/requires.txt
+quickquery.egg-info/top_level.txt
