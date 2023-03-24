@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!--* Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+        crossorigin="anonymous"></script>
+    <title>Consulta a cliente | QuickQuery</title>
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center align-content-center">
+            <div class="col-6 mb-3">
+                <div class="mt-4">
+                    <div class="mb-3">
+                        <select class="form-select" aria-label="Default select" id="type_doc">
+                            <option selected value="default">----------</option>
+                            <option value="nit">NIT</option>
+                            <option value="cc">Cedula</option>
+                            <option value="pasaporte">Pasaporte</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="inputID" class="form-label">Numero de documento</label>
+                        <input type="text" class="form-control" id="inputID">
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary" id="search">Buscar</button>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div id='container-table' class="table-responsive d-none" >
+                        <table id="cliente_table" aria-describedby="datos cliente" style="width: 100%;"
+                            class=" table table-striped table-hover table-sm dataTable  text-truncate text-center h-100">
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+<!--* jquery  -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"
+    integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+
+<!--* datatablesjs  -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />
+
+<script src="https://code.jquery.com/jquery-3.5.1.js"> </script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"> </script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"> </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"> </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"> </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"> </script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"> </script>
+<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"> </script>
+
+
+
+<script>
+    var btn = document.getElementById("search");
+    var container_table = document.getElementById('container-table')
+    
+    $(document).ready(function () {
+        const columns = [
+
+            { title: 'id' },
+            { title: 'CC' },
+            { title: 'NIT' },
+            { title: 'Pasaporte' },
+            { title: 'Nombre.' },
+            { title: 'Apellido' },
+            { title: 'Correo' },
+            { title: 'Telefono' },
+        ];
+
+        var tabla = $('#cliente_table').DataTable({
+            columns: columns,
+            dom: 'Bfrtip',
+            buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+            searching: false,
+            language: {
+                "loadingRecords": "Cargando...",
+                "processing": "Procesando...",
+                "search": "Buscar:",
+                "zeroRecords": "Sin resultados encontrados",
+                "paginate": {
+                    "first": "Primero",
+                    "last": "Ultimo",
+                    "next": "Siguiente",
+                    "previous": "Anterior"
+                }
+            },
+            responsive: "true",
+        });
+
+
+        btn.onclick = async function () {
+            var type_doc = document.getElementById("type_doc").value;
+            var input = document.getElementById("inputID").value;
+            var url
+            console.log(type_doc)
+
+            if (type_doc != 'default') {
+                url = `/api/query/cliente/?${type_doc}=${input}`
+                console.log("url::  " + url);
+                var [status, data] = await fetchCliente(url)
+                var response_data = data.map(function (element) {
+                    return Object.values(element);
+                });
+                container_table.classList.remove('d-none')
+                tabla.clear().rows.add(response_data).draw();
+
+            }
+
+        };
+    });
+
+    async function fetchCliente(url) {
+        var values = []
+        var response;
+
+        try {
+            response = await fetch(url, { method: 'GET', headers: { "Content-type": "application/json;charset=UTF-8" } });
+
+        } catch (err) {
+            console.error(`Error en la petición: ${err}`);
+            values.push(false)
+            values.push('OperationalError: fetch')
+            return values;
+        }
+        if (!response.ok) {
+            const errorData = await response;
+            console.error(`Error en la respuesta:`, errorData);
+            values.push(response.ok)
+            values.push(response.statusText)
+        } else {
+            var responseData = await response.json();
+            values.push(response.ok)
+            values.push(responseData)
+        }
+        return values;
+    }
+
+</script>
